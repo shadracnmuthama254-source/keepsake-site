@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+{% from "macros.html" import item_card, collection_card, quick_add, empty_state %}
+{% block title %}Home · {% endblock %}
+
+{% block content %}
+<div class="container">
+  <section class="welcome">
+    <div class="welcome__copy">
+      <p class="eyebrow script">{{ today_label }}</p>
+      <h1><span data-greeting>{{ greeting }}</span>, {{ current_user.display_name }}!</h1>
+      <p class="lead">
+        {% if total %}
+        Your scrapbook holds <strong>{{ total }}</strong> {{ 'keepsake' if total == 1 else 'keepsakes' }}. What shall we add today?
+        {% else %}
+        Your scrapbook is brand new — let's pin up the very first page.
+        {% endif %}
+      </p>
+      <p class="prompt" data-rotate="What made you smile this week?|Which photo deserves a story?|Leave a note for your future self.|Save a link you would hate to lose.|Who would you like to remember today?">✍️ <span>What made you smile this week?</span></p>
+    </div>
+    <div class="welcome__stickers" aria-hidden="true">
+      <span class="sticker sticker--1">🌻</span>
+      <span class="sticker sticker--2">✨</span>
+      <span class="sticker sticker--3">📌</span>
+      <span class="sticker sticker--4">💌</span>
+    </div>
+  </section>
+
+  <section class="block" aria-labelledby="quick-title">
+    <h2 id="quick-title" class="section-title">Quick add</h2>
+    {{ quick_add() }}
+  </section>
+
+  {% if total %}
+  <ul class="stat-row" aria-label="Your archive at a glance">
+    {% for key, t in TYPES.items() %}
+    <li class="stat tone-{{ t.tone }}">
+      <a href="{{ url_for('archive.list_items', type=key) }}">
+        <span class="stat__emoji" aria-hidden="true">{{ t.emoji }}</span>
+        <span class="stat__num">{{ counts[key] }}</span>
+        <span class="stat__label">{{ t.plural }}</span>
+      </a>
+    </li>
+    {% endfor %}
+  </ul>
+  {% endif %}
+
+  {% if on_this_day %}
+  <section class="block" aria-labelledby="otd-title">
+    <div class="section-head">
+      <h2 id="otd-title" class="section-title">On this day <span aria-hidden="true">🕰️</span></h2>
+    </div>
+    <div class="card-grid">{% for item in on_this_day %}{{ item_card(item) }}{% endfor %}</div>
+  </section>
+  {% endif %}
+
+  <section class="block" aria-labelledby="recent-title">
+    <div class="section-head">
+      <h2 id="recent-title" class="section-title">Recently added</h2>
+      {% if recent %}<a class="section-link" href="{{ url_for('archive.list_items', sort='added_desc') }}">See everything →</a>{% endif %}
+    </div>
+    {% if recent %}
+    <div class="card-grid">{% for item in recent %}{{ item_card(item) }}{% endfor %}</div>
+    {% else %}
+    {% call empty_state('📔', 'Nothing pinned up yet', 'Add a memory, upload a photo, jot a note, store a document or save a link. Your first keepsake is just a click away.') %}
+      <a class="btn btn-primary" href="{{ url_for('archive.create', type='memory') }}">Write my first memory</a>
+    {% endcall %}
+    {% endif %}
+  </section>
+
+  <section class="block" aria-labelledby="fav-title">
+    <div class="section-head">
+      <h2 id="fav-title" class="section-title">Favourites <span aria-hidden="true">♥</span></h2>
+      {% if favorites %}<a class="section-link" href="{{ url_for('archive.list_items', fav=1) }}">All favourites →</a>{% endif %}
+    </div>
+    {% if favorites %}
+    <div class="card-grid">{% for item in favorites %}{{ item_card(item) }}{% endfor %}</div>
+    {% else %}
+    <p class="soft-note">Tap the ♡ on any keepsake to pin it here for quick access.</p>
+    {% endif %}
+  </section>
+
+  <section class="block" aria-labelledby="col-title">
+    <div class="section-head">
+      <h2 id="col-title" class="section-title">Collections</h2>
+      <a class="section-link" href="{{ url_for('organize.collections') }}">{{ 'Manage all →' if collections else 'Create one →' }}</a>
+    </div>
+    {% if collections %}
+    <div class="collection-grid">{% for c in collections %}{{ collection_card(c) }}{% endfor %}</div>
+    {% else %}
+    {% call empty_state('🗂️', 'No collections yet', 'Collections are like albums or folders — Family, Travel, Recipes… Group your keepsakes however you like.') %}
+      <a class="btn btn-secondary" href="{{ url_for('organize.collection_new') }}">Create a collection</a>
+    {% endcall %}
+    {% endif %}
+  </section>
+</div>
+{% endblock %}

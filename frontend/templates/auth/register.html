@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% from "macros.html" import csrf, field_error %}
+{% block title %}Create account · {% endblock %}
+
+{% block content %}
+<div class="auth-wrap">
+  <section class="auth-card paper tone-rose">
+    <p class="eyebrow script">let's get started</p>
+    <h1>Create your scrapbook</h1>
+
+    {% if errors %}<div class="form-summary" role="alert">Almost there — please check the highlighted fields.</div>{% endif %}
+
+    <form method="post" action="{{ url_for('auth.register') }}" data-busy>
+      {{ csrf() }}
+      <div class="field{{ ' has-error' if errors.display_name }}">
+        <label for="display_name">What should we call you?</label>
+        <input id="display_name" name="display_name" type="text" value="{{ values.display_name }}" required maxlength="60" autocomplete="name" autofocus>
+        {{ field_error(errors, 'display_name') }}
+      </div>
+      <div class="field{{ ' has-error' if errors.email }}">
+        <label for="email">Email</label>
+        <input id="email" name="email" type="email" value="{{ values.email }}" required maxlength="254" autocomplete="email">
+        {{ field_error(errors, 'email') }}
+      </div>
+      <div class="field{{ ' has-error' if errors.password }}">
+        <label for="password">Password</label>
+        <div class="password-wrap">
+          <input id="password" name="password" type="password" required minlength="8" maxlength="128" autocomplete="new-password" aria-describedby="pw-hint">
+          <button type="button" class="password-toggle" data-toggle-password="password" aria-label="Show password">Show</button>
+        </div>
+        <p class="field-hint" id="pw-hint">At least 8 characters, with a letter and a number.</p>
+        {{ field_error(errors, 'password') }}
+      </div>
+      <div class="field{{ ' has-error' if errors.confirm_password }}">
+        <label for="confirm_password">Confirm password</label>
+        <input id="confirm_password" name="confirm_password" type="password" required maxlength="128" autocomplete="new-password">
+        {{ field_error(errors, 'confirm_password') }}
+      </div>
+      <button class="btn btn-primary btn-block" type="submit">Create my account</button>
+    </form>
+
+    <p class="auth-links">Already have an account? <a href="{{ url_for('auth.login') }}">Sign in</a></p>
+  </section>
+</div>
+{% endblock %}

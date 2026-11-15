@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% from "macros.html" import csrf, empty_state %}
+{% block title %}Tags · {% endblock %}
+
+{% block content %}
+<div class="container narrow">
+  <header class="page-head">
+    <p class="eyebrow script">little labels</p>
+    <h1>Tags</h1>
+    <p class="lead">Tags are quick labels you can add to anything. Click a tag to see everything that wears it.</p>
+  </header>
+
+  <form class="tag-new paper-form" method="post" action="{{ url_for('organize.tag_create') }}" data-busy>
+    {{ csrf() }}
+    <label for="new-tag">New tag</label>
+    <div class="tag-new__row">
+      <input id="new-tag" name="name" type="text" maxlength="40" required placeholder="e.g. birthdays" autocomplete="off">
+      <button class="btn btn-primary" type="submit">Add tag</button>
+    </div>
+  </form>
+
+  {% if tags %}
+  <ul class="tag-list">
+    {% for tag in tags %}
+    <li class="tag-row">
+      <a class="tag-chip tag-chip--lg tagc-{{ tag.id % 6 }}" href="{{ url_for('archive.list_items', tag=tag.id) }}">#{{ tag.name }}</a>
+      <span class="muted small">{{ tag.item_count }} {{ 'item' if tag.item_count == 1 else 'items' }}</span>
+      <div class="tag-row__actions">
+        <details class="rename">
+          <summary class="btn btn-ghost btn-sm">Rename</summary>
+          <form method="post" action="{{ url_for('organize.tag_rename', tag_id=tag.id) }}" class="rename__form">
+            {{ csrf() }}
+            <label class="sr-only" for="rename-{{ tag.id }}">New name for {{ tag.name }}</label>
+            <input id="rename-{{ tag.id }}" name="name" type="text" value="{{ tag.name }}" maxlength="40" required>
+            <button class="btn btn-secondary btn-sm" type="submit">Save</button>
+          </form>
+        </details>
+        <form method="post" action="{{ url_for('organize.tag_delete', tag_id=tag.id) }}"
+              data-confirm="The tag #{{ tag.name }} will be permanently deleted and removed from {{ tag.item_count }} {{ 'item' if tag.item_count == 1 else 'items' }}. The items themselves stay safe.">
+          {{ csrf() }}
+          <button class="btn btn-danger btn-sm" type="submit">Delete</button>
+        </form>
+      </div>
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+    {{ empty_state('🏷️', 'No tags yet', 'Add tags while saving a keepsake, or create your first one above.') }}
+  {% endif %}
+</div>
+{% endblock %}

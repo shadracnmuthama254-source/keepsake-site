@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% from "macros.html" import item_card, pagination, empty_state, quick_add %}
+{% block title %}Archive · {% endblock %}
+
+{% block content %}
+<div class="container">
+  <header class="page-head page-head--row">
+    <div>
+      <p class="eyebrow script">everything you've kept</p>
+      <h1>Your archive</h1>
+    </div>
+    <a class="btn btn-primary" href="{{ url_for('archive.create') }}">＋ Add a keepsake</a>
+  </header>
+
+  <form class="filter-bar" method="get" action="{{ url_for('archive.list_items') }}" role="search" aria-label="Search and filter">
+    <div class="field field--search">
+      <label for="f-q">Search</label>
+      <input id="f-q" type="search" name="q" value="{{ filters.q }}" placeholder="Titles, notes, places, tags…" maxlength="100">
+    </div>
+    <div class="field">
+      <label for="f-type">Type</label>
+      <select id="f-type" name="type" data-autosubmit>
+        <option value="">All types</option>
+        {% for key, t in TYPES.items() %}
+        <option value="{{ key }}" {{ 'selected' if filters.type == key }}>{{ t.emoji }} {{ t.plural }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="field">
+      <label for="f-collection">Collection</label>
+      <select id="f-collection" name="collection" data-autosubmit>
+        <option value="">Any collection</option>
+        <option value="none" {{ 'selected' if filters.collection == 'none' }}>No collection</option>
+        {% for c in collections %}
+        <option value="{{ c.id }}" {{ 'selected' if filters.collection == c.id }}>{{ c.emoji }} {{ c.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="field">
+      <label for="f-tag">Tag</label>
+      <select id="f-tag" name="tag" data-autosubmit>
+        <option value="">Any tag</option>
+        {% for tag in tags %}
+        <option value="{{ tag.id }}" {{ 'selected' if filters.tag == tag.id }}>#{{ tag.name }} ({{ tag.item_count }})</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="field">
+      <label for="f-sort">Sort by</label>
+      <select id="f-sort" name="sort" data-autosubmit>
+        {% for key, s in SORTS.items() %}
+        <option value="{{ key }}" {{ 'selected' if filters.sort == key }}>{{ s[0] }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="field">
+      <label for="f-from">From date</label>
+      <input id="f-from" type="date" name="date_from" value="{{ filters.date_from.isoformat() if filters.date_from else '' }}">
+    </div>
+    <div class="field">
+      <label for="f-to">To date</label>
+      <input id="f-to" type="date" name="date_to" value="{{ filters.date_to.isoformat() if filters.date_to else '' }}">
+    </div>
+    <label class="check check--pill"><input type="checkbox" name="fav" value="1" {{ 'checked' if filters.fav }} data-autosubmit> ♥ Favourites only</label>
+    <div class="filter-bar__actions">
+      <button class="btn btn-primary btn-sm" type="submit">Apply</button>
+      {% if filtered %}<a class="btn btn-ghost btn-sm" href="{{ url_for('archive.list_items') }}">Clear all</a>{% endif %}
+    </div>
+  </form>
+
+  <p class="results-line" aria-live="polite">
+    {% if total %}
+      Showing <strong>{{ total }}</strong> {{ 'keepsake' if total == 1 else 'keepsakes' }}{% if filtered %} matching your filters{% endif %}{% if pages > 1 %} · page {{ page }} of {{ pages }}{% endif %}
+    {% endif %}
+  </p>
+
+  {% if items %}
+  <div class="card-grid">{% for item in items %}{{ item_card(item) }}{% endfor %}</div>
+  {{ pagination(page, pages) }}
+  {% elif filtered %}
+    {% call empty_state('🔍', 'Nothing matches those filters', 'Try a different search word, or clear the filters to see everything again.') %}
+      <a class="btn btn-secondary" href="{{ url_for('archive.list_items') }}">Clear all filters</a>
+    {% endcall %}
+  {% else %}
+    {% call empty_state('📔', 'Your scrapbook is waiting', 'Nothing has been pinned up yet. Choose what you would like to keep first:') %}
+      {{ quick_add() }}
+    {% endcall %}
+  {% endif %}
+</div>
+{% endblock %}

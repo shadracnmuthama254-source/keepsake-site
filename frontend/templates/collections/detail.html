@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% from "macros.html" import csrf, item_card, pagination, empty_state, quick_add %}
+{% block title %}{{ collection.name }} · {% endblock %}
+
+{% block content %}
+<div class="container">
+  <p><a class="back-link" href="{{ url_for('organize.collections') }}">← All collections</a></p>
+
+  <header class="collection-head tone-{{ collection.color|tone }}">
+    <span class="collection-head__emoji" aria-hidden="true">{{ collection.emoji }}</span>
+    <div class="collection-head__text">
+      <h1>{{ collection.name }}</h1>
+      {% if collection.description %}<p class="lead">{{ collection.description }}</p>{% endif %}
+      <p class="muted small">{{ total }} {{ 'keepsake' if total == 1 else 'keepsakes' }}</p>
+    </div>
+    <div class="collection-head__actions">
+      <a class="btn btn-secondary btn-sm" href="{{ url_for('organize.collection_edit', cid=collection.id) }}">✏️ Edit</a>
+      <form method="post" action="{{ url_for('organize.collection_delete', cid=collection.id) }}"
+            data-confirm="The collection “{{ collection.name }}” will be permanently deleted. The keepsakes inside will stay in your archive, just without a collection.">
+        {{ csrf() }}
+        <button class="btn btn-danger btn-sm" type="submit">🗑 Delete</button>
+      </form>
+    </div>
+  </header>
+
+  {% if items %}
+  <div class="section-head">
+    <h2 class="section-title">Inside this collection</h2>
+    <a class="section-link" href="{{ url_for('archive.list_items', collection=collection.id) }}">Search &amp; filter →</a>
+  </div>
+  <div class="card-grid">{% for item in items %}{{ item_card(item) }}{% endfor %}</div>
+  {{ pagination(page, pages) }}
+  <section class="block" aria-labelledby="more-title">
+    <h2 id="more-title" class="section-title">Add something else here</h2>
+    {{ quick_add(collection.id) }}
+  </section>
+  {% else %}
+    {% call empty_state(collection.emoji, 'This collection is empty', 'Add your first keepsake straight into it:') %}
+      {{ quick_add(collection.id) }}
+    {% endcall %}
+  {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+{% from "macros.html" import csrf, type_chip, tag_chip, fav_button %}
+{% set t = TYPES[item.type] %}
+{% set is_image = item.file_stored_name and item.file_mime and item.file_mime.startswith('image/') %}
+{% block title %}{{ item.title }} · {% endblock %}
+
+{% block content %}
+<div class="container">
+  <p><a class="back-link" href="{{ url_for('archive.list_items') }}">← Back to archive</a></p>
+
+  <article class="detail tone-{{ t.tone }}">
+    <div class="detail__media">
+      {% if is_image %}
+      <a class="polaroid" href="{{ url_for('archive.file_view', item_id=item.id) }}" target="_blank" rel="noopener">
+        <img src="{{ url_for('archive.file_view', item_id=item.id) }}" alt="{{ item.title }}">
+        <span class="polaroid__caption script">{{ item.title|truncate(40) }}</span>
+      </a>
+      {% elif item.type == 'link' and item.url %}
+      <div class="link-card paper">
+        <span class="link-card__emoji" aria-hidden="true">🔗</span>
+        <p class="link-card__domain">{{ item.url|domain }}</p>
+        <p class="link-card__url">{{ item.url|truncate(90, true) }}</p>
+        <a class="btn btn-primary" href="{{ item.url }}" target="_blank" rel="noopener noreferrer nofollow">Open link ↗</a>
+      </div>
+      {% elif item.file_stored_name %}
+      <div class="file-card paper">
+        <span class="doc-badge" aria-hidden="true">.{{ item.file_original_name|file_ext }}</span>
+        <p class="file-card__name">{{ item.file_original_name }}</p>
+        <p class="muted small">{{ item.file_size|filesize }}</p>
+        <a class="btn btn-primary" href="{{ url_for('archive.file_download', item_id=item.id) }}">Download ⬇</a>
+      </div>
+      {% else %}
+      <div class="glyph-card paper"><span aria-hidden="true">{{ t.emoji }}</span></div>
+      {% endif %}
+    </div>
+
+    <div class="detail__panel paper">
+      <div class="detail__top">
+        {{ type_chip(item.type) }}
+        {{ fav_button(item) }}
+      </div>
+      <h1>{{ item.title }}</h1>
+
+      <ul class="meta-list">
+        <li><span aria-hidden="true">📅</span> <time datetime="{{ item.item_date.isoformat() }}">{{ item.item_date|fmt_date(long=true) }}</time></li>
+        {% if item.location %}<li><span aria-hidden="true">📍</span> {{ item.location }}</li>{% endif %}
+        {% if item.url and is_image %}<li><span aria-hidden="true">🔗</span> <a href="{{ item.url }}" target="_blank" rel="noopener noreferrer nofollow">{{ item.url|domain }}</a></li>{% endif %}
+        {% if item.collection_id %}
+        <li><span aria-hidden="true">{{ item.collection_emoji }}</span>
+          <a href="{{ url_for('organize.collection_detail', cid=item.collection_id) }}">{{ item.collection_name }}</a></li>
+        {% endif %}
+      </ul>
+
+      {% if item.description %}<div class="prose">{{ item.description }}</div>{% else %}<p class="muted">No note was written for this one.</p>{% endif %}
+
+      {% if item.tags %}
+      <div class="detail__tags" aria-label="Tags">{% for tag in item.tags %}{{ tag_chip(tag) }}{% endfor %}</div>
+      {% endif %}
+
+      {% if item.file_stored_name and (is_image or item.type == 'link') %}
+      <div class="file-line">
+        <span aria-hidden="true">📎</span>
+        <span>{{ item.file_original_name }} <span class="muted small">({{ item.file_size|filesize }})</span></span>
+        <a class="btn btn-secondary btn-sm" href="{{ url_for('archive.file_download', item_id=item.id) }}">Download</a>
+      </div>
+      {% endif %}
+
+      <p class="muted small detail__stamp">Added {{ item.created_at|fmt_datetime }}{% if item.updated_at and item.updated_at != item.created_at %} · edited {{ item.updated_at|fmt_datetime }}{% endif %}</p>
+
+      <div class="detail-actions">
+        <a class="btn btn-secondary" href="{{ url_for('archive.edit', item_id=item.id) }}">✏️ Edit</a>
+        <form method="post" action="{{ url_for('archive.delete', item_id=item.id) }}"
+              data-confirm="“{{ item.title }}” will be permanently deleted{% if item.file_stored_name %}, along with its file{% endif %}. This can't be undone.">
+          {{ csrf() }}
+          <button class="btn btn-danger" type="submit">🗑 Delete</button>
+        </form>
+      </div>
+    </div>
+  </article>
+</div>
+{% endblock %}

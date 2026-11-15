@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% from "macros.html" import csrf, field_error %}
+{% set editing = collection is not none %}
+{% block title %}{{ 'Edit collection' if editing else 'New collection' }} · {% endblock %}
+
+{% block content %}
+<div class="container narrow">
+  <header class="page-head">
+    <p class="eyebrow script">{{ 'make it yours' if editing else 'a fresh album' }}</p>
+    <h1>{{ 'Edit collection' if editing else 'New collection' }}</h1>
+  </header>
+
+  {% if errors %}<div class="form-summary" role="alert">Please check the highlighted fields below.</div>{% endif %}
+
+  <form class="paper-form" method="post" data-busy
+        action="{{ url_for('organize.collection_edit', cid=collection.id) if editing else url_for('organize.collection_new') }}">
+    {{ csrf() }}
+
+    <div class="field{{ ' has-error' if errors.name }}">
+      <label for="name">Name</label>
+      <input id="name" name="name" type="text" value="{{ values.name }}" required maxlength="80" placeholder="e.g. Summer 2026" autofocus>
+      {{ field_error(errors, 'name') }}
+    </div>
+
+    <div class="field{{ ' has-error' if errors.description }}">
+      <label for="description">Description <span class="optional">(optional)</span></label>
+      <input id="description" name="description" type="text" value="{{ values.description }}" maxlength="500" placeholder="What belongs in here?">
+      {{ field_error(errors, 'description') }}
+    </div>
+
+    <fieldset class="field">
+      <legend>Colour</legend>
+      <div class="swatches">
+        {% for tone in COLLECTION_TONES %}
+        <label class="swatch tone-{{ tone }}">
+          <input type="radio" name="color" value="{{ tone }}" {{ 'checked' if values.color == tone }}>
+          <span class="swatch__dot"></span><span class="sr-only">{{ tone|capitalize }}</span>
+        </label>
+        {% endfor %}
+      </div>
+    </fieldset>
+
+    <fieldset class="field">
+      <legend>Icon</legend>
+      <div class="emoji-picker">
+        {% for e in COLLECTION_EMOJIS %}
+        <label class="emoji-option">
+          <input type="radio" name="emoji" value="{{ e }}" {{ 'checked' if values.emoji == e }}>
+          <span aria-hidden="true">{{ e }}</span><span class="sr-only">Icon {{ loop.index }}</span>
+        </label>
+        {% endfor %}
+      </div>
+    </fieldset>
+
+    <div class="form-actions">
+      <button class="btn btn-primary btn-lg" type="submit">{{ 'Save changes' if editing else 'Create collection' }}</button>
+      <a class="btn btn-ghost" href="{{ url_for('organize.collection_detail', cid=collection.id) if editing else url_for('organize.collections') }}">Cancel</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

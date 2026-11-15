@@ -1,0 +1,116 @@
+{# Shared building blocks. Import with:  {% from "macros.html" import ... %} #}
+
+{% macro csrf() -%}
+<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+{%- endmacro %}
+
+{% macro field_error(errors, name) -%}
+{% if errors and errors.get(name) %}<p class="field-error" id="err-{{ name }}" role="alert">{{ errors[name] }}</p>{% endif %}
+{%- endmacro %}
+
+{% macro type_chip(type) -%}
+{% set t = TYPES[type] %}<span class="chip tone-{{ t.tone }}"><span aria-hidden="true">{{ t.emoji }}</span> {{ t.label }}</span>
+{%- endmacro %}
+
+{% macro tag_chip(tag) -%}
+<a class="tag-chip tagc-{{ tag.id % 6 }}" href="{{ url_for('archive.list_items', tag=tag.id) }}">#{{ tag.name }}</a>
+{%- endmacro %}
+
+{% macro fav_button(item) %}
+<form method="post" action="{{ url_for('archive.toggle_favorite', item_id=item.id) }}" class="fav-form">
+  {{ csrf() }}
+  <input type="hidden" name="next" value="{{ request.full_path.rstrip('?') }}">
+  <button type="submit" class="fav-btn{{ ' is-on' if item.is_favorite }}"
+          aria-pressed="{{ 'true' if item.is_favorite else 'false' }}"
+          aria-label="{{ 'Remove ' ~ item.title ~ ' from favorites' if item.is_favorite else 'Add ' ~ item.title ~ ' to favorites' }}">
+    {{ '♥' if item.is_favorite else '♡' }}
+  </button>
+</form>
+{% endmacro %}
+
+{% macro item_card(item) %}
+{% set t = TYPES[item.type] %}
+{% set has_image = item.file_stored_name and item.file_mime and item.file_mime.startswith('image/') %}
+<article class="item-card type-{{ item.type }} tone-{{ t.tone }}">
+  {% if has_image %}
+  <div class="item-card__media">
+    <img src="{{ url_for('archive.file_view', item_id=item.id) }}" alt="" loading="lazy">
+  </div>
+  {% elif item.type == 'link' %}
+  <div class="item-card__media item-card__media--glyph">
+    <span class="media-glyph" aria-hidden="true">🔗</span>
+    <span class="media-domain">{{ item.url|domain }}</span>
+  </div>
+  {% elif item.file_stored_name %}
+  <div class="item-card__media item-card__media--glyph">
+    <span class="doc-badge" aria-hidden="true">.{{ item.file_original_name|file_ext }}</span>
+  </div>
+  {% else %}
+  <div class="item-card__media item-card__media--glyph">
+    <span class="media-glyph" aria-hidden="true">{{ t.emoji }}</span>
+  </div>
+  {% endif %}
+
+  <div class="item-card__body">
+    <div class="item-card__meta">
+      {{ type_chip(item.type) }}
+      <time datetime="{{ item.item_date.isoformat() }}">{{ item.item_date|fmt_date }}</time>
+    </div>
+    <h3 class="item-card__title"><a href="{{ url_for('archive.detail', item_id=item.id) }}">{{ item.title }}</a></h3>
+    {% if item.description %}<p class="item-card__excerpt">{{ item.description|truncate(110) }}</p>{% endif %}
+    {% if item.location %}<p class="item-card__place"><span aria-hidden="true">📍</span> {{ item.location }}</p>{% endif %}
+    {% if item.tags %}
+    <div class="item-card__tags">
+      {% for tag in item.tags[:3] %}{{ tag_chip(tag) }}{% endfor %}
+      {% if item.tags|length > 3 %}<span class="muted small">+{{ item.tags|length - 3 }}</span>{% endif %}
+    </div>
+    {% endif %}
+  </div>
+  {{ fav_button(item) }}
+</article>
+{% endmacro %}
+
+{% macro collection_card(c) %}
+<article class="collection-card tone-{{ c.color|tone }}">
+  <a class="collection-card__link" href="{{ url_for('organize.collection_detail', cid=c.id) }}">
+    <span class="collection-card__emoji" aria-hidden="true">{{ c.emoji }}</span>
+    <span class="collection-card__name">{{ c.name }}</span>
+  </a>
+  {% if c.description %}<p class="collection-card__desc">{{ c.description|truncate(80) }}</p>{% endif %}
+  <p class="collection-card__count">{{ c.item_count }} {{ 'keepsake' if c.item_count == 1 else 'keepsakes' }}</p>
+</article>
+{% endmacro %}
+
+{% macro quick_add(collection_id=none) %}
+<div class="quick-add" role="group" aria-label="Quick add">
+  {% for key, t in TYPES.items() %}
+  <a class="quick-add__tile tone-{{ t.tone }}" href="{{ url_for('archive.create', type=key, collection=collection_id) }}">
+    <span class="quick-add__emoji" aria-hidden="true">{{ t.emoji }}</span>
+    <span class="quick-add__label">Add {{ t.label|lower }}</span>
+  </a>
+  {% endfor %}
+</div>
+{% endmacro %}
+
+{% macro empty_state(emoji, title, text) %}
+<div class="empty-state">
+  <div class="empty-emoji" aria-hidden="true">{{ emoji }}</div>
+  <h2>{{ title }}</h2>
+  <p>{{ text }}</p>
+  {% if caller %}<div class="empty-actions">{{ caller() }}</div>{% endif %}
+</div>
+{% endmacro %}
+
+{% macro pagination(page, pages) %}
+{% if pages > 1 %}
+<nav class="pagination" aria-label="Pages">
+  {% if page > 1 %}<a class="page-link" rel="prev" href="{{ page_url(page - 1) }}">← Previous</a>{% endif %}
+  {% for p in page_window(page, pages) %}
+    {% if p is none %}<span class="page-gap" aria-hidden="true">…</span>
+    {% elif p == page %}<span class="page-link is-current" aria-current="page">{{ p }}</span>
+    {% else %}<a class="page-link" href="{{ page_url(p) }}">{{ p }}</a>{% endif %}
+  {% endfor %}
+  {% if page < pages %}<a class="page-link" rel="next" href="{{ page_url(page + 1) }}">Next →</a>{% endif %}
+</nav>
+{% endif %}
+{% endmacro %}

@@ -1,0 +1,136 @@
+{% extends "base.html" %}
+{% from "macros.html" import csrf, field_error %}
+{% set editing = item is not none %}
+{% block title %}{{ 'Edit keepsake' if editing else 'Add a keepsake' }} · {% endblock %}
+
+{% block content %}
+<div class="container narrow">
+  <header class="page-head">
+    <p class="eyebrow script">{{ 'tidy it up' if editing else 'pin something new' }}</p>
+    <h1>{{ 'Edit “' ~ item.title ~ '”' if editing else 'Add to your scrapbook' }}</h1>
+  </header>
+
+  {% if errors %}
+  <div class="form-summary" role="alert"><strong>Almost there!</strong> Please check the highlighted fields below.</div>
+  {% endif %}
+
+  <form class="paper-form item-form" method="post" enctype="multipart/form-data" data-busy
+        data-type="{{ values.type }}" data-max-mb="{{ max_upload_mb }}"
+        action="{{ url_for('archive.edit', item_id=item.id) if editing else url_for('archive.create') }}">
+    {{ csrf() }}
+
+    <fieldset class="field{{ ' has-error' if errors.type }}">
+      <legend>What are you keeping?</legend>
+      <div class="type-picker">
+        {% for key, t in TYPES.items() %}
+        <label class="type-tile tone-{{ t.tone }}">
+          <input type="radio" name="type" value="{{ key }}" {{ 'checked' if values.type == key }} required>
+          <span class="type-tile__body">
+            <span class="type-tile__emoji" aria-hidden="true">{{ t.emoji }}</span>
+            <span class="type-tile__label">{{ t.label }}</span>
+          </span>
+        </label>
+        {% endfor %}
+      </div>
+      {{ field_error(errors, 'type') }}
+    </fieldset>
+
+    <div class="field{{ ' has-error' if errors.title }}">
+      <label for="title">Title</label>
+      <input id="title" name="title" type="text" value="{{ values.title }}" required maxlength="200" placeholder="Give it a name you'll recognise" autofocus>
+      {{ field_error(errors, 'title') }}
+    </div>
+
+    <div class="field only-link{{ ' has-error' if errors.url }}">
+      <label for="url">Web address</label>
+      <input id="url" name="url" type="text" inputmode="url" value="{{ values.url }}" maxlength="2048" placeholder="https://example.com/the-page">
+      {{ field_error(errors, 'url') }}
+    </div>
+
+    <div class="field{{ ' has-error' if errors.description }}">
+      <label for="description"><span class="label-link">Why is it worth keeping?</span><span class="label-other">Story or note</span></label>
+      <textarea id="description" name="description" rows="7" maxlength="20000" placeholder="Write the story, the details, the feeling…">{{ values.description }}</textarea>
+      {{ field_error(errors, 'description') }}
+    </div>
+
+    <div class="field not-link{{ ' has-error' if errors.file }}">
+      <label for="file">
+        <span class="hint-photo">Photo</span><span class="hint-document">Document</span><span class="hint-other">Attachment <span class="optional">(optional)</span></span>
+      </label>
+
+      {% if editing and item.file_stored_name %}
+      <div class="file-current">
+        {% if item.file_mime and item.file_mime.startswith('image/') %}
+        <img src="{{ url_for('archive.file_view', item_id=item.id) }}" alt="Current image" class="file-current__thumb">
+        {% else %}
+        <span class="doc-badge doc-badge--sm" aria-hidden="true">.{{ item.file_original_name|file_ext }}</span>
+        {% endif %}
+        <div>
+          <strong>{{ item.file_original_name }}</strong><br>
+          <span class="muted small">{{ item.file_size|filesize }} · current file — choose another below to replace it</span>
+        </div>
+      </div>
+      <label class="check hint-other"><input type="checkbox" name="remove_file" value="1"> Remove the current file</label>
+      {% endif %}
+
+      <input id="file" name="file" type="file" data-preview="file-preview"
+             accept="{{ '.' ~ allowed_extensions|join(',.') }}">
+      <p class="field-hint">
+        <span class="hint-photo">JPG, PNG, GIF or WebP</span>
+        <span class="hint-nonphoto">PDF, Word, Excel, PowerPoint, text and more</span>
+        · up to {{ max_upload_mb }} MB
+      </p>
+      <p class="field-error" id="file-client-error" role="alert" hidden></p>
+      {{ field_error(errors, 'file') }}
+      <div class="file-preview" id="file-preview" hidden>
+        <img alt="Preview of the selected image" hidden>
+        <p class="file-preview__meta"></p>
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="field{{ ' has-error' if errors.item_date }}">
+        <label for="item_date">Date</label>
+        <input id="item_date" name="item_date" type="date" value="{{ values.item_date }}" required min="1900-01-01" max="2100-12-31">
+        {{ field_error(errors, 'item_date') }}
+      </div>
+      <div class="field{{ ' has-error' if errors.location }}">
+        <label for="location">Location <span class="optional">(optional)</span></label>
+        <input id="location" name="location" type="text" value="{{ values.location }}" maxlength="200" placeholder="Where was this?">
+        {{ field_error(errors, 'location') }}
+      </div>
+    </div>
+
+    <div class="field{{ ' has-error' if errors.collection_id }}">
+      <label for="collection_id">Collection <span class="optional">(optional)</span></label>
+      <select id="collection_id" name="collection_id">
+        <option value="">No collection</option>
+        {% for c in collections %}
+        <option value="{{ c.id }}" {{ 'selected' if values.collection_id|string == c.id|string }}>{{ c.emoji }} {{ c.name }}</option>
+        {% endfor %}
+      </select>
+      {% if not collections %}<p class="field-hint">No collections yet — <a href="{{ url_for('organize.collection_new') }}">create one</a> first if you'd like to group things.</p>{% endif %}
+      {{ field_error(errors, 'collection_id') }}
+    </div>
+
+    <div class="field{{ ' has-error' if errors.tags }}">
+      <label for="tags">Tags <span class="optional">(optional)</span></label>
+      <input id="tags" name="tags" type="text" value="{{ values.tags }}" maxlength="600" autocomplete="off" placeholder="family, summer, recipes" aria-describedby="tags-hint">
+      <p class="field-hint" id="tags-hint">Separate tags with commas.</p>
+      {% if tags %}
+      <div class="tag-suggest" data-target="tags" aria-label="Your existing tags">
+        {% for tag in tags[:24] %}<button type="button" class="tag-chip tagc-{{ tag.id % 6 }}" data-tag="{{ tag.name }}">#{{ tag.name }}</button>{% endfor %}
+      </div>
+      {% endif %}
+      {{ field_error(errors, 'tags') }}
+    </div>
+
+    <label class="check check--fav"><input type="checkbox" name="is_favorite" value="1" {{ 'checked' if values.is_favorite }}> ♥ Mark as a favourite</label>
+
+    <div class="form-actions">
+      <button class="btn btn-primary btn-lg" type="submit">{{ 'Save changes' if editing else 'Save to my scrapbook' }}</button>
+      <a class="btn btn-ghost" href="{{ url_for('archive.detail', item_id=item.id) if editing else url_for('archive.list_items') }}">Cancel</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}Your personal scrapbook · {% endblock %}
+{% block body_class %}page-landing{% endblock %}
+
+{% block content %}
+<section class="container hero">
+  <div class="hero__copy">
+    <p class="eyebrow script">your own little corner of the internet</p>
+    <h1>Keep the moments that matter.</h1>
+    <p class="lead">Memories, photos, notes, documents and links — pinned into one warm, colourful scrapbook that belongs only to you.</p>
+    <div class="hero__actions">
+      {% if config.ALLOW_REGISTRATION %}
+      <a class="btn btn-primary btn-lg" href="{{ url_for('auth.register') }}">Start my scrapbook</a>
+      {% endif %}
+      <a class="btn btn-secondary btn-lg" href="{{ url_for('auth.login') }}">{{ 'I already have one' if config.ALLOW_REGISTRATION else 'Sign in' }}</a>
+    </div>
+  </div>
+
+  <div class="collage" aria-hidden="true">
+    <div class="collage-card collage-card--1 tone-sky"><span>📷</span><strong>Grandma's kitchen</strong><em>summer 2019</em></div>
+    <div class="collage-card collage-card--2 tone-sun"><span>📝</span><strong>Pancake recipe</strong><em>the fluffy one</em></div>
+    <div class="collage-card collage-card--3 tone-rose"><span>💭</span><strong>Our first road trip</strong><em>so many snacks</em></div>
+    <div class="collage-card collage-card--4 tone-mint"><span>🔗</span><strong>Favourite blog</strong><em>read it twice</em></div>
+    <div class="collage-card collage-card--5 tone-grape"><span>📄</span><strong>Graduation letter</strong><em>keep forever</em></div>
+  </div>
+</section>
+
+<section class="container features" aria-labelledby="features-title">
+  <h2 id="features-title" class="section-title">Everything has a place</h2>
+  <ul class="feature-grid">
+    {% for key, t in TYPES.items() %}
+    <li class="feature tone-{{ t.tone }}">
+      <span class="feature__emoji" aria-hidden="true">{{ t.emoji }}</span>
+      <h3>{{ t.plural }}</h3>
+      <p>{{ t.hint }}</p>
+    </li>
+    {% endfor %}
+  </ul>
+  <p class="features-note">Organise with <strong>collections</strong> and <strong>tags</strong>, mark favourites, and search everything in a second. Your account is private — only you can see what you keep.</p>
+</section>
+{% endblock %}

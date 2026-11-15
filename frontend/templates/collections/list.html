@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% from "macros.html" import collection_card, empty_state %}
+{% block title %}Collections · {% endblock %}
+
+{% block content %}
+<div class="container">
+  <header class="page-head page-head--row">
+    <div>
+      <p class="eyebrow script">albums for your life</p>
+      <h1>Collections</h1>
+    </div>
+    <a class="btn btn-primary" href="{{ url_for('organize.collection_new') }}">＋ New collection</a>
+  </header>
+
+  {% if collections %}
+  <div class="collection-grid collection-grid--big">{% for c in collections %}{{ collection_card(c) }}{% endfor %}</div>
+  {% else %}
+    {% call empty_state('🗂️', 'No collections yet', 'Create your first one — maybe “Family”, “Travel”, “Recipes” or “Important papers”.') %}
+      <a class="btn btn-primary" href="{{ url_for('organize.collection_new') }}">Create a collection</a>
+    {% endcall %}
+  {% endif %}
+</div>
+{% endblock %}
